@@ -5,7 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "deepface>=0.0.100",
+    "opencv-python>=4.13.0.92",
     "streamlit",
+    "tf-keras>=2.21.0",
 ]
 
 [build-system]
