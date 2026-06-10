@@ -8,6 +8,7 @@ dependencies = [
     "deepface>=0.0.100",
     "opencv-python>=4.13.0.92",
     "streamlit",
+    "streamlit-camera-input-live",
     "tf-keras>=2.21.0",
 ]
 
