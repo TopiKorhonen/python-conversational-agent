@@ -27,13 +27,20 @@ class ChatAgent:
     
     def _detect_emotion(self, response_text: str, user_message: str) -> str:
         """Detect emotion from the conversation context"""
-        msg_lower = user_message.lower() + " " + response_text.lower()
-        
-        if any(w in msg_lower for w in ["happy", "great", "awesome", "excellent", "wonderful"]):
-            return "happy"
-        elif any(w in msg_lower for w in ["sad", "sorry", "unfortunately", "problem", "issue"]):
-            return "concerned"
-        elif "?" in user_message:
+        msg_lower = user_message.lower()
+        resp_lower = response_text.lower()
+
+        # Question asked → mascot thinks while responding
+        if "?" in user_message:
             return "thinking"
-        else:
-            return "neutral"
+        # Positive/happy language
+        if any(w in msg_lower + " " + resp_lower 
+               for w in ["happy", "great", "awesome", "excellent", "wonderful", 
+                         "amazing", "fantastic", "love", "perfect"]):
+            return "happy"
+        # Problem/concern language
+        if any(w in resp_lower 
+               for w in ["sorry", "unfortunately", "problem", "issue", "error", "can't"]):
+            return "concerned"
+
+        return "neutral"
