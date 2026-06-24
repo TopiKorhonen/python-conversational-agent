@@ -57,3 +57,5 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Local test files
+vision_test.py
