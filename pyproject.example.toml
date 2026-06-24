@@ -1,0 +1,17 @@
+# Do not blindly overwrite your team's pyproject.toml.
+# If your repo already has pyproject.toml, merge only the dependencies below.
+
+[project]
+name = "robot-mascot-agent"
+version = "0.1.0"
+description = "Python desktop/browser prototype for a robot mascot conversational agent"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "streamlit>=1.30.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
