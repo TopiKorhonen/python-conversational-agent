@@ -1,7 +1,7 @@
 import streamlit as st
 import hashlib
 import torch
-from src.python_conversational_agent.speech.app import AudioProcessor
+from python_conversational_agent.speech.app import AudioProcessor
 
 st.set_page_config(page_title="Voice Pipeline", layout="centered")
 st.title("Whisper → Piper Pipeline")
