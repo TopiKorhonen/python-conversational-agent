@@ -3,3 +3,9 @@ streamlit-camera-input-live
 deepface
 opencv-python
 tf-keras
+torch
+numpy
+librosa
+faster-whisper
+piper-tts
+huggingface-hub

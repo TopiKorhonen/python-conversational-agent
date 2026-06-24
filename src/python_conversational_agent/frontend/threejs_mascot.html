@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Mascot</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+
+<body>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-text">Loading 3D Mascot...</div>
+        <div id="error-message"></div>
+    </div>
+    <div id="canvas-container"></div>
+
+    <script>
+        // ---- Emotion mapping ----
+        // Multiple emotions can map to the same clip name
+        const emotionToClip = {
+            'happy': 'excited',
+            'concerned': 'idle',
+            'thinking': 'think',
+            'listening': 'idle',
+            'neutral': 'idle'
+        };
+        const TRANSIENT_EMOTIONS = ['happy', 'thinking'];
+        let currentEmotion = 'CURRENT_EMOTION_PLACEHOLDER';
+
+        // ---- Three.js setup ----
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0f172a);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight || 1, 0.1, 100);
+        camera.position.set(0, 1, 3);
+        camera.lookAt(0, 1, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth || 300, container.clientHeight || 300);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05;
+        controls.minDistance = 2.5;
+        controls.maxDistance = 3;
+        controls.target.set(0, 1, 0);
+
+        // ---- Lighting ----
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+        scene.add(ambientLight);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+        hemiLight.position.set(0, 20, 0);
+        scene.add(hemiLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // ---- GLTF Loader ----
+        const loader = new THREE.GLTFLoader();
+        const modelUrl = 'GLB_DATA_URI_PLACEHOLDER';
+        let mixer, model;
+        const actions = {};
+        let activeAction, previousAction;
+        let currentClip = '';
+
+        loader.load(
+            modelUrl,
+            (gltf) => {
+                model = gltf.scene;
+
+                // Center and ground the model
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                model.position.sub(center);
+                model.position.y -= box.min.y;
+                model.traverse((obj) => {
+                    if (obj.isMesh) {
+                        obj.castShadow = true;
+                        obj.receiveShadow = true;
+                    }
+                });
+                scene.add(model);
+                console.log('MODEL LOADED SUCCESSFULLY:', model);
+
+                // Animation setup
+                mixer = new THREE.AnimationMixer(model);
+                console.log('Found ${gltf.animations.length} animation clips:');
+
+                // First, map each clip to emotions (allow multiple emotions per clip)
+                gltf.animations.forEach((clip) => {
+                    const name = clip.name.toLowerCase();
+                    console.log('  - ${clip.name}');
+                    for (const [emotion, clipName] of Object.entries(emotionToClip)) {
+                        if (name.includes(clipName)) {
+                            actions[emotion] = mixer.clipAction(clip);
+                            console.log('    ➔ mapped to emotion "${emotion}"');
+                            // Do NOT break – allow multiple emotions to map to the same clip
+                        }
+                    }
+                });
+
+                // Fallback: ensure neutral has an action.
+                // Try to find the clip containing 'idle'
+                if (!actions['neutral']) {
+                    const idleClip = gltf.animations.find(clip =>
+                        clip.name.toLowerCase().includes('idle')
+                    );
+                    if (idleClip) {
+                        actions['neutral'] = mixer.clipAction(idleClip);
+                        console.log('   ➔ using "Idle" clip as neutral fallback');
+                    } else if (gltf.animations.length > 0) {
+                        // Fallback to first clip if no idle found
+                        actions['neutral'] = mixer.clipAction(gltf.animations[0]);
+                        console.log('   ➔ using first clip as neutral fallback');
+                    }
+                }
+
+                // Hide loading overlay
+                document.getElementById('loading-overlay').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 500);
+
+                // Play the initial emotion
+                playEmotion(currentEmotion);
+                animate();
+            },
+            (xhr) => {
+                if (xhr.total > 0) {
+                    document.getElementById('loading-text').innerText = 'Loading 3D Mascot...';
+                }
+            },
+            (error) => {
+                console.error('GLTF Load Error:', error);
+                const errEl = document.getElementById('error-message');
+                errEl.innerText = 'Model failed to load – showing fallback cube.';
+                errEl.style.display = 'block';
+                document.querySelector('.spinner').style.display = 'none';
+                document.getElementById('loading-text').style.display = 'none';
+
+                // Fallback red cube
+                const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                const cube = new THREE.Mesh(geo, mat);
+                cube.position.set(0, 0.5, 0);
+                scene.add(cube);
+                animate();
+            }
+        );
+
+        function playEmotion(emotion) {
+            if (!mixer) return;
+            let action = actions[emotion] || actions['neutral'];
+            if (!action) return;
+
+            previousAction = activeAction;
+            activeAction = action;
+
+            if (previousAction && previousAction !== activeAction) {
+                previousAction.fadeOut(0.5);
+            }
+            activeAction.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(0.5).play();
+            currentClip = emotion;
+            console.log('Playing emotion: ${emotion} → clip: ${action._clip.name}');
+
+            // Return to idle after transient animations finish
+            if (TRANSIENT_EMOTIONS.includes(emotion)) {
+                const clipDuration = action._clip.duration * 1000;
+                setTimeout(() => {
+                    if (currentClip === emotion) {  // only if not already changed
+                        playEmotion('neutral');
+                    }
+                }, clipDuration - 400); // start fade slightly before end
+            }
+        }
+
+        // ---- Animation loop ----
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta();
+            if (mixer) mixer.update(dt);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // ---- Handle resize ----
+        function onResize() {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            if (w > 0 && h > 0) {
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
+            }
+        }
+        window.addEventListener('resize', onResize);
+        setTimeout(onResize, 100);
+
+        // Listen for emotion commands from Streamlit parent
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (data && data.type === 'SET_EMOTION') {
+                console.log(' Received emotion:', data.emotion);
+                currentEmotion = data.emotion;
+                playEmotion(currentEmotion);
+            }
+        });
+    </script>
+</body>
+
+</html>
