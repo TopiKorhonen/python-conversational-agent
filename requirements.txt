@@ -1,1 +1,7 @@
 streamlit
+torch
+numpy
+librosa
+faster-whisper
+piper-tts
+huggingface-hub
