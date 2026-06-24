@@ -1,19 +1,33 @@
-## Quick Start (Cross-Platform Setup)
+## Quick Start
 
-We use **`uv`** as our Python package and project manager. `uv` handles Python installations, virtual environments, and dependency synchronization automatically on Windows, macOS, and Linux.
+### Requirements
+- **Ollama**: [Download and install Ollama](https://ollama.com/)
+- **uv**: [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-### 1. Install `uv`
+### Setup and Run
 
-  ```powershell
-https://docs.astral.sh/uv/getting-started/installation/
-  ```
+1. **Pull and run the model via Ollama:**
+   ```bash
+   ollama pull mistral
+   ollama run mistral
+   ```
 
-### 2. Example
+2. **Clone the repository:**
+   ```bash
+   git clone https://github.com/TopiKorhonen/python-conversational-agent.git
+   ```
 
-`uv` will automatically download the correct Python version (defined in `.python-version`), create a virtual environment, install the dependencies, and run the app with one single command.
+3. **Change into the project directory:**
+   ```bash
+   cd python-conversational-agent
+   ```
 
+4. **Sync dependencies:**
+   ```bash
+   uv sync
+   ```
 
-
-```bash
-uv run streamlit run src/python_conversational_agent/interface/app.py
-```
+5. **Run the program:**
+   ```bash
+   uv run streamlit run src/python_conversational_agent/interface/app.py
+   ```
