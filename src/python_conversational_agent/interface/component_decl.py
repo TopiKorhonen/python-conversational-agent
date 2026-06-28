@@ -9,3 +9,8 @@ threejs_viewer_component = components.declare_component(
     "threejs_viewer",
     path=BUILD_DIR
 )
+
+threejs_mascot_component = components.declare_component(
+    "threejs_mascot",
+    path=os.path.join(PARENT_DIR, "mascot_frontend")
+)
